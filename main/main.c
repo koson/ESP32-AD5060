@@ -1,42 +1,47 @@
 #include "freertos/FreeRTOS.h"
-//#include "esp_wifi.h"
 #include "esp_system.h"
 #include "esp_event.h"
-//#include "esp_event_loop.h"
-//#include "nvs_flash.h"
 #include "driver/gpio.h"
+#include "driver/spi_master.h"
 
-//esp_err_t event_handler(void *ctx, system_event_t *event)
-//{
-//    return ESP_OK;
-//}
+#define  AD5060_CS 		GPIO_NUM_5
+#define  AD5060_MISO 	GPIO_NUM_19
+#define  AD5060_MOSI 	GPIO_NUM_23
+#define  AD5060_SCLK 	GPIO_NUM_18
+#define  AD5060_HOST    HSPI_HOST
+#define  DMA_CHAN		2
 
-void app_main(void)
-{
-//    nvs_flash_init();
-//    tcpip_adapter_init();
-//    ESP_ERROR_CHECK( esp_event_loop_init(event_handler, NULL) );
-//    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-//    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-//    ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
-//    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-//    wifi_config_t sta_config = {
-//        .sta = {
-//            .ssid = CONFIG_ESP_WIFI_SSID,
-//            .password = CONFIG_ESP_WIFI_PASSWORD,
-//            .bssid_set = false
-//        }
-//    };
-//    ESP_ERROR_CHECK( esp_wifi_set_config(WIFI_IF_STA, &sta_config) );
-//    ESP_ERROR_CHECK( esp_wifi_start() );
-//    ESP_ERROR_CHECK( esp_wifi_connect() );
-//
-    gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-    int level = 0;
-    while (true) {
-        gpio_set_level(GPIO_NUM_2, level);
-        level = !level;
-        vTaskDelay(300 / portTICK_PERIOD_MS);
-    }
+float refVal_cali = 1.0171;
+
+//uninitalised pointers to SPI objects
+
+void app_main(void) {
+	esp_err_t ret;
+	gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
+	int level = 0;
+
+	spi_bus_config_t buscfg = {
+			.mosi_io_num = AD5060_MOSI,
+			.miso_io_num = AD5060_MISO,
+			.sclk_io_num = AD5060_SCLK,
+			.quadwp_io_num = -1,
+			.quadhd_io_num = -1,
+			.max_transfer_sz = 32,
+	};
+
+	ret = spi_bus_initialize(AD5060_HOST, &buscfg, DMA_CHAN);
+	ESP_ERROR_CHECK(ret);
+
+
+
+
+
+	printf("Hello World.\r\n");
+
+	while (true) {
+		gpio_set_level(GPIO_NUM_2, level);
+		level = !level;
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+	}
 }
 

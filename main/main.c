@@ -72,6 +72,7 @@ void app_main(void) {
 	printf("init SPI device return = %d\r\n", ret);
 	ESP_ERROR_CHECK(ret);
 
+	refVal = 20000;
 
 	if (mode == CORRECTED) {
 		printf("offset = %d\r\n", offset);
@@ -95,6 +96,10 @@ void app_main(void) {
 	t.tx_data[2] = 0xff;
 	t.tx_data[3] = 0x00;
 
+	t.tx_data[1] = (DACreg & 0xFF00) >> 8;
+	t.tx_data[2] = (DACreg & 0xFF);
+
+	printf("tx_data = %x %x %x\r\n", t.tx_data[0], t.tx_data[1], t.tx_data[2]);
 
 	// write data to AD5060
 	ret = spi_device_acquire_bus(spi1, portMAX_DELAY);

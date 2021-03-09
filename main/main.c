@@ -71,6 +71,14 @@ void app_main(void) {
 	ret = spi_bus_add_device(AD5060_HOST, &devcfg, &spi1);
 	printf("init SPI device return = %d\r\n", ret);
 	ESP_ERROR_CHECK(ret);
+	spi_transaction_t t;
+	memset(&t, 0, sizeof(t));
+	t.length = 24;
+	t.flags = SPI_TRANS_USE_TXDATA;
+	t.tx_data[0] = 0x00;
+	t.tx_data[1] = 0x80;
+	t.tx_data[2] = 0xff;
+	t.tx_data[3] = 0x00;
 
 	refVal = 20000;
 
@@ -85,17 +93,6 @@ void app_main(void) {
 
 	printf("DACreg = %x\r\n", DACreg);
 
-
-
-	spi_transaction_t t;
-	memset(&t, 0, sizeof(t));
-	t.length = 24;
-	t.flags = SPI_TRANS_USE_TXDATA;
-	t.tx_data[0] = 0x00;
-	t.tx_data[1] = 0x80;
-	t.tx_data[2] = 0xff;
-	t.tx_data[3] = 0x00;
-
 	t.tx_data[1] = (DACreg & 0xFF00) >> 8;
 	t.tx_data[2] = (DACreg & 0xFF);
 
@@ -109,17 +106,43 @@ void app_main(void) {
 	ESP_ERROR_CHECK(ret);
 	spi_device_release_bus(spi1);
 
-
-
-
-
-
 	printf("Hello World.\r\n");
 
 	while (true) {
 		gpio_set_level(GPIO_NUM_2, level);
 		level = !level;
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+
+
+
+		refVal += 1000;
+
+		if (mode == CORRECTED) {
+			printf("offset = %d\r\n", offset);
+			DACreg = (uint16_t) (((refVal + 2.68710725) / 6.24904004)) + offset;
+		}
+		else
+		{
+			DACreg = (uint16_t) ((refVal + 2.68710725) / 6.24904004);
+		}
+
+		printf("DACreg = %x\r\n", DACreg);
+
+		t.tx_data[1] = (DACreg & 0xFF00) >> 8;
+		t.tx_data[2] = (DACreg & 0xFF);
+
+		printf("tx_data = %x %x %x\r\n", t.tx_data[0], t.tx_data[1], t.tx_data[2]);
+
+		// write data to AD5060
+		ret = spi_device_acquire_bus(spi1, portMAX_DELAY);
+		ESP_ERROR_CHECK(ret);
+		ret = spi_device_transmit(spi1, &t);
+		printf("SPI device transmit return = %d\r\n", ret);
+		ESP_ERROR_CHECK(ret);
+		spi_device_release_bus(spi1);
+
+
+
 	}
 }
 
